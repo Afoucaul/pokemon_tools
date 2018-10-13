@@ -5,6 +5,9 @@ verify_ssl = true
 
 [packages]
 flask = "*"
+pygame = "*"
+numpy = "*"
+flask-cors = "*"
 
 [dev-packages]
 
