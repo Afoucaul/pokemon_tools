@@ -8,6 +8,7 @@ flask = "*"
 pygame = "*"
 numpy = "*"
 flask-cors = "*"
+pillow = "*"
 
 [dev-packages]
 
