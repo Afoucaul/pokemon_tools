@@ -1,20 +1,18 @@
-from flask import request, jsonify
-from PIL import Image
-import io
-from .engine import world
 from . import app
+from .engine.world import World
+from .utils import get_body
+from PIL import Image
+from flask import request, jsonify, send_file
 import base64
+import io
+import json
+import numpy as np
+import pickle
 
 
 @app.route("/map")
 def greet():
     return "hello"
-
-
-@app.route("/map/convert", methods=['POST'])
-def convert():
-     received_world = request.form['map']
-     return b'hello'
 
 
 @app.route("/map/tileset/prepare", methods=['POST'])
@@ -28,8 +26,8 @@ def prepare_tileset():
     original = Image.open(image_descriptor)
 
     tiles = []
-    for i in range(original.width // width):
-        for j in range(original.height // height):
+    for j in range(original.height // height):
+        for i in range(original.width // width):
             rect = ((width)*i, (height)*j, (width)*(i+1) - 1, (height)*(j+1) - 1)
             tile = original.crop(rect)
 
@@ -39,3 +37,18 @@ def prepare_tileset():
             tiles.append(png)
 
     return jsonify({'tiles': tiles})
+
+
+@app.route("/map/convert", methods=['POST'])
+def convert_json_world():
+    body = get_body(request)
+    lower_tiles = body['lowerTiles']
+    world = World(width=len(lower_tiles), height=len(lower_tiles[0]))
+    world.set_layer("lower_tiles", lower_tiles)
+    world.lower_tiles = np.transpose(world.lower_tiles)
+
+    data = pickle.dumps(world)
+    with open("oui", 'wb') as oui:
+        oui.write(data)
+
+    return send_file(io.BytesIO(data), mimetype="application/octet-stream")
