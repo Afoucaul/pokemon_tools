@@ -43,11 +43,16 @@ def prepare_tileset():
 def convert_json_world():
     body = get_body(request)
     lower_tiles = body['lowerTiles']
-    world = World(width=len(lower_tiles), height=len(lower_tiles[0]))
+
+    world = World(height=len(lower_tiles), width=len(lower_tiles[0]))
     world.set_layer("lower_tiles", lower_tiles)
     world.lower_tiles = np.transpose(world.lower_tiles)
 
     data = pickle.dumps(world)
+    print(__name__.split('.', 1)[0].encode('ascii'))
+    print(data)
+    data = data.replace("{}.".format(__name__.split('.', 1)[0]).encode('ascii'), b'')
+    print(data)
     with open("oui", 'wb') as oui:
         oui.write(data)
 
