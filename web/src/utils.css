@@ -1,0 +1,55 @@
+.button {
+    display: inline-block;
+    border-radius: 3px;
+    border: solid 1px black;
+    padding: 0.5em;
+    cursor: pointer;
+}
+
+.button:hover {
+    background: whitesmoke;
+}
+
+.modal-overlay {
+    position: fixed;
+    z-index: 10;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    padding-top: 2em;
+}
+
+.modal {
+    width: 50%;
+    height: 50;
+    background: white;
+    margin: auto;
+    border-radius: 3px;
+    padding: 0.5em;
+    position: relative;
+}
+
+.modal .cross {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-right: 0.5em;
+    margin-top: 0.5em;
+    cursor: pointer;
+}
+
+.modal .cross:hover {
+    color: red;
+}
+
+.modal .title {
+    font-size: 1em;
+    font-weight: 700;
+    margin-bottom: 1em;
+}
+
+.modal .content {
+}

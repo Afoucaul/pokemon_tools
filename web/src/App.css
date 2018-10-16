@@ -1,0 +1,14 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+
+    --color-primary: #FF9800;
+    --color-on-primary: #FFFFFF;
+}
+
+.app header {
+    padding: 0.5em;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+}
