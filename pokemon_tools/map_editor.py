@@ -52,7 +52,7 @@ def convert_json_world():
     data = pickle.dumps(world)
     data = data.replace("{}.".format(__name__.split('.', 1)[0]).encode('ascii'), b'')
 
-    return send_file("../oui", mimetype="application/octet-stream")
+    return send_file(io.BytesIO(data), mimetype="application/octet-stream")
 
 
 @app.route("/map/load", methods=['POST'])
