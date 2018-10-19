@@ -9,6 +9,8 @@ import json
 import numpy as np
 import pickle
 
+import time
+
 
 @app.route("/map")
 def greet():
@@ -28,7 +30,7 @@ def prepare_tileset():
     tiles = []
     for j in range(original.height // height):
         for i in range(original.width // width):
-            rect = ((width)*i, (height)*j, (width)*(i+1) - 1, (height)*(j+1) - 1)
+            rect = ((width)*i, (height)*j, (width)*(i+1), (height)*(j+1))
             tile = original.crop(rect)
 
             output = io.BytesIO()
@@ -49,11 +51,20 @@ def convert_json_world():
     world.lower_tiles = np.transpose(world.lower_tiles)
 
     data = pickle.dumps(world)
-    print(__name__.split('.', 1)[0].encode('ascii'))
-    print(data)
     data = data.replace("{}.".format(__name__.split('.', 1)[0]).encode('ascii'), b'')
-    print(data)
-    with open("oui", 'wb') as oui:
-        oui.write(data)
 
-    return send_file(io.BytesIO(data), mimetype="application/octet-stream")
+    return send_file("../oui", mimetype="application/octet-stream")
+
+
+@app.route("/map/load", methods=['POST'])
+def convert_pickled_world():
+    world_source = request.files['world']
+    data = world_source.stream.read()
+    data = data.replace(b'engine', b'pokemon_tools.engine', 1)
+    world = pickle.loads(data)
+
+    print(world)
+
+    # print(world)
+
+    return "ok"

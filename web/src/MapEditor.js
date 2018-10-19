@@ -12,7 +12,6 @@ import axios from 'axios';
 
 
 function Tile({onClick, width, height, value, image}) {
-    console.log(image);
     return (
         <div 
             className="tile"
@@ -30,6 +29,17 @@ Tile.defaultProps = {
     width: 64,
     height: 64,
 };
+
+
+class ObjectView extends React.Component {
+    render() {
+        const self = this;
+
+        return (
+            <h1>OUI</h1>
+        );
+    }
+}
 
 
 class TilesetView extends React.Component {
@@ -255,6 +265,7 @@ export class MapEditor extends React.Component {
                 ["lowerTiles", true],
                 ["upperTiles", true],
                 ["collisions", true],
+                ["objects", true],
             ],
             selectedLayer:              0,
         };
@@ -307,12 +318,19 @@ export class MapEditor extends React.Component {
                             self.setState({world: world});
                         }}
                     />
-                    <TilesetView 
-                        columns={5}
-                        tileset={self.state.tileset}
-                        selectedTile={self.state.selectedTile}
-                        onTileClick={index => self.setState({selectedTile: index})}
-                    />
+                    {(function() {
+                        if ([0, 1].includes(self.state.selectedLayer)) {
+                            return <TilesetView 
+                                columns={5}
+                                tileset={self.state.tileset}
+                                selectedTile={self.state.selectedTile}
+                                onTileClick={index => self.setState({selectedTile: index})}
+                            />;
+                        } else if (self.state.selectedLayer === 3) {
+                            return <ObjectView
+                            />;
+                        }
+                    })()}
                     <LayerSelect
                         layers={self.state.layers}
                         onSelectLayer={(i) => self.setState({selectedLayer: i})}
@@ -364,6 +382,7 @@ export class MapEditor extends React.Component {
     handleSaveMap() {
         const self = this;
         const request = {
+            responseType: 'arraybuffer',
             url: 'http://localhost:5000/map/convert',
             method: 'post',
             data: {
@@ -374,8 +393,8 @@ export class MapEditor extends React.Component {
         axios(request)
             .then(function(response) {
                 console.log(response);
-                downloadFile(response.data, "new.world");
-            });
+                downloadFile(response.data);
+            })
     }
 
     handleMapChange(pickledMap) {
