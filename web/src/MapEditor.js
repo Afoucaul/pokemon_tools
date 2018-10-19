@@ -398,13 +398,14 @@ export class MapEditor extends React.Component {
     }
 
     handleMapChange(pickledMap) {
-        // const self = this;
+        const self = this;
         const formData = new FormData();
         formData.append('world', pickledMap);
 
         axios.post('http://localhost:5000/map/load', formData)
             .then(function(response) {
                 console.log(response);
+                self.setState({world: response.data.lowerTiles});
             });
     }
 }

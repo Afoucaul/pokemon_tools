@@ -5,7 +5,6 @@ from PIL import Image
 from flask import request, jsonify, send_file
 import base64
 import io
-import json
 import numpy as np
 import pickle
 
@@ -63,8 +62,16 @@ def convert_pickled_world():
     data = data.replace(b'engine', b'pokemon_tools.engine', 1)
     world = pickle.loads(data)
 
-    print(world)
+    return world_to_json(world)
 
-    # print(world)
 
-    return "ok"
+def world_to_json(world):
+    as_json = {
+        "lowerTiles":   world.lower_tiles.tolist(),
+        "upperTiles":   world.upper_tiles.tolist(),
+        "collisions":   world.collisions.tolist(),
+        "events":       [],
+        "npcs":         []
+    }
+
+    return jsonify(as_json)
