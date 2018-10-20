@@ -5,7 +5,22 @@
     flex-shrink: 0;
 }
 
-.tile:hover:after {
+.tiles-container {
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.tiles-container .tile {
+    position: absolute;
+}
+
+.tiles-container .tile-collision-overlay {
+    position: absolute;
+    opacity: 0.5;
+}
+
+.tile:hover:after, .tiles-container:hover:after {
     content: "";
     background: rgba(0, 0, 0, 0.1);
     position: absolute;

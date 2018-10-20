@@ -6,10 +6,16 @@ import {
     Modal,
     handleChange,
     downloadFile,
-    Noop,
 } from './utils.js';
 import axios from 'axios';
 // import saveAs from 'file-saver';
+
+
+const COLLISIONS = [
+    {name: "None", color: "white"},
+    {name: "Wall", color: "black"},
+    {name: "Water", color: "blue"},
+];
 
 
 function createWorld(rows, columns) {
@@ -22,13 +28,15 @@ function createWorld(rows, columns) {
     world.events = [];
 
     for (let i = 0; i < rows; i++) {
-        let row = [];
+        let row1 = [];
+        let row2 = [];
         for (let j = 0; j < columns; j++) {
-            row.push(0);
+            row1.push(0);
+            row2.push(-1);
         }
-        world.lowerTiles.push(row);
-        world.upperTiles.push(row.slice());
-        world.collisions.push(row.slice());
+        world.lowerTiles.push(row1);
+        world.collisions.push(row1.slice());
+        world.upperTiles.push(row2.slice());
     }
 
     return world;
@@ -62,10 +70,41 @@ Tile.defaultProps = {
 
 class ObjectView extends React.Component {
     render() {
-        const self = this;
+        // const self = this;
 
         return (
             <h1>OUI</h1>
+        );
+    }
+}
+
+
+class CollisionsView extends React.Component {
+    render() {
+        const self = this;
+        const style = {
+            display:            'flex',
+            flexDirection:      'column',
+        };
+
+        return (
+            <div
+                style={style}
+            >
+                {COLLISIONS.map(function({name, color}, i) {
+                    return (
+                        <div>
+                            <input 
+                                type="radio" 
+                                name={name} 
+                                checked={i === self.props.currentCollision} 
+                                onChange={() => self.props.onCollisionSelect(i)}
+                            />
+                            <label htmlFor={name}>{name}</label>
+                        </div>
+                    );
+                })}
+            </div>
         );
     }
 }
@@ -158,6 +197,13 @@ class MapView extends React.Component {
                                 >
                                     {
                                         row.map(function(tile, j) {
+                                            let overlayColor = "none";
+                                            if (COLLISIONS[self.props.world.collisions[i][j]]) {
+                                                overlayColor = COLLISIONS[
+                                                    self.props.world.collisions[i][j]
+                                                ].color;
+
+                                            }
                                             return (
                                                 <div 
                                                     className="tiles-container"
@@ -185,6 +231,17 @@ class MapView extends React.Component {
                                                                 self.props.world.upperTiles[i][j]
                                                             ]
                                                         }
+                                                    />
+                                                    <div 
+                                                        className="tile-collision-overlay"
+                                                        style={{
+                                                            background: overlayColor,
+                                                            width: self.state.tileWidth,
+                                                            height: self.state.tileHeight,
+                                                            display: self.props.layersVisibility[
+                                                                'collisions'
+                                                            ] ? "initial" : "none"
+                                                        }}
                                                     />
                                                 </div>
                                             );
@@ -214,15 +271,15 @@ MapView.defaultProps = {
 };
 
 
-class LoadTilesetModal extends React.Component {
-    render() {
-        return (
-            <Modal>
-                bonjour
-            </Modal>
-        );
-    }
-}
+// class LoadTilesetModal extends React.Component {
+//     render() {
+//         return (
+//             <Modal>
+//                 bonjour
+//             </Modal>
+//         );
+//     }
+// }
 
 
 class NewMapModal extends React.Component {
@@ -320,6 +377,7 @@ export class MapEditor extends React.Component {
                 ["events", true],
             ],
             selectedLayer:              0,
+            currentCollision:           COLLISIONS[0].name,
         };
 
         this.handleTilesetChange = this.handleTilesetChange.bind(this);
@@ -379,6 +437,11 @@ export class MapEditor extends React.Component {
                                 tileset={self.state.tileset}
                                 selectedTile={self.state.selectedTile}
                                 onTileClick={index => self.setState({selectedTile: index})}
+                            />;
+                        } else if (self.state.selectedLayer === 2) {
+                            return <CollisionsView
+                                currentCollision={self.state.selectedTile}
+                                onCollisionSelect={index => self.setState({selectedTile: index})}
                             />;
                         } else if (self.state.selectedLayer === 3) {
                             return <ObjectView
