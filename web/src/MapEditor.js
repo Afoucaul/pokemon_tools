@@ -11,6 +11,29 @@ import axios from 'axios';
 // import saveAs from 'file-saver';
 
 
+function createWorld(rows, columns) {
+    const world = {};
+
+    world.lowerTiles = [];
+    world.upperTiles = [];
+    world.collisions = [];
+    world.objects = [];
+    world.events = [];
+
+    for (let i = 0; i < rows; i++) {
+        let row = [];
+        for (let j = 0; j < columns; j++) {
+            row.push(0);
+        }
+        world.lowerTiles.push(row);
+        world.upperTiles.push(row.slice());
+        world.collisions.push(row.slice());
+    }
+
+    return world;
+}
+
+
 function Tile({onClick, width, height, value, image}) {
     return (
         <div 
@@ -114,49 +137,51 @@ class MapView extends React.Component {
 
     render() {
         const self = this;
-        const style = {
-            // width:      self.state.tileWidth * self.props.columns,
-            // height:     self.state.tileHeight * self.props.rows,
-        };
+        console.warn(self.props.world);
 
-        return (
-            <div
-                className="tilesGrid"
-                style={style}
-            >
-                {
-                    self.props.world.map(function(row, i) {
-                        return (
-                            <div 
-                                style={{display: "flex"}}
-                                key={i}
-                            >
-                                {
-                                    row.map(function(tile, j) {
-                                        return (
-                                            <Tile 
-                                                key={j} 
-                                                width={self.state.tileWidth}
-                                                height={self.state.tileHeight}
-                                                value={tile}
-                                                image={self.props.tileset[tile]}
-                                                onClick={() => self.props.onTileClick(i, j)}
-                                            />
-                                        );
-                                    })
-                                }
-                            </div>
-                        );
-                    })
-                }
-            </div>
-        );
+        if (self.props.world) {
+            return (
+                <div
+                    className="tilesGrid"
+                >
+                    {
+                        self.props.world.lowerTiles.map(function(row, i) {
+                            return (
+                                <div 
+                                    style={{display: "flex"}}
+                                    key={i}
+                                >
+                                    {
+                                        row.map(function(tile, j) {
+                                            return (
+                                                <Tile 
+                                                    key={j} 
+                                                    width={self.state.tileWidth}
+                                                    height={self.state.tileHeight}
+                                                    value={tile}
+                                                    image={self.props.tileset[tile]}
+                                                    onClick={() => self.props.onTileClick(i, j)}
+                                                />
+                                            );
+                                        })
+                                    }
+                                </div>
+                            );
+                        })
+                    }
+                </div>
+            );
+        } else {
+            return (
+                "No map loaded"
+            );
+        }
     }
 }
 MapView.defaultProps = {
     columns:            10,
     rows:               10,
-    world:              [],
+    world:              undefined,
     tileset:            [],
     tileWidth:          64,
     tileHeight:         64,
@@ -266,6 +291,7 @@ export class MapEditor extends React.Component {
                 ["upperTiles", true],
                 ["collisions", true],
                 ["objects", true],
+                ["events", true],
             ],
             selectedLayer:              0,
         };
@@ -363,20 +389,12 @@ export class MapEditor extends React.Component {
 
     handleCreateMap(rows, columns) {
         const self = this;
-        let world = [];
 
         rows = parseInt(rows);
         columns = parseInt(columns);
+        const world = createWorld(rows, columns);
 
-        for (let i = 0; i < rows; i++) {
-            let row = [];
-            for (let j = 0; j < columns; j++) {
-                row.push(0);
-            }
-            world.push(row);
-        }
-
-        self.setState({world: world, displayNewMapModal: false});
+        self.setState({world: world, displayNewMapModal: false}, () => console.log(self.state.world));
     }
 
     handleSaveMap() {
@@ -386,7 +404,7 @@ export class MapEditor extends React.Component {
             url: 'http://localhost:5000/map/convert',
             method: 'post',
             data: {
-                lowerTiles: self.state.world,
+                world: self.state.world,
             }
         };
 

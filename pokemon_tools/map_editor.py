@@ -43,7 +43,8 @@ def prepare_tileset():
 @app.route("/map/convert", methods=['POST'])
 def convert_json_world():
     body = get_body(request)
-    lower_tiles = body['lowerTiles']
+    json_world = body['world']
+    lower_tiles = json_world['lowerTiles']
 
     world = World(height=len(lower_tiles), width=len(lower_tiles[0]))
     world.set_layer("lower_tiles", lower_tiles)
