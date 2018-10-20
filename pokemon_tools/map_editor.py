@@ -45,10 +45,16 @@ def convert_json_world():
     body = get_body(request)
     json_world = body['world']
     lower_tiles = json_world['lowerTiles']
+    upper_tiles = json_world['upperTiles']
+    collisions = json_world['collisions']
 
     world = World(height=len(lower_tiles), width=len(lower_tiles[0]))
     world.set_layer("lower_tiles", lower_tiles)
+    world.set_layer("upper_tiles", upper_tiles)
+    world.set_layer("collisions", collisions)
     world.lower_tiles = np.transpose(world.lower_tiles)
+    world.upper_tiles = np.transpose(world.upper_tiles)
+    world.collisions = np.transpose(world.collisions)
 
     data = pickle.dumps(world)
     data = data.replace("{}.".format(__name__.split('.', 1)[0]).encode('ascii'), b'')
