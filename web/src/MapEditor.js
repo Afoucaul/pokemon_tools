@@ -6,6 +6,7 @@ import {
     Modal,
     handleChange,
     downloadFile,
+    Noop,
 } from './utils.js';
 import axios from 'axios';
 // import saveAs from 'file-saver';
@@ -34,11 +35,16 @@ function createWorld(rows, columns) {
 }
 
 
-function Tile({onClick, width, height, value, image}) {
+function Tile({onClick, width, height, value, image, display}) {
+    const style = {width: width, height: height};
+    if (display === false) {
+        style.display = 'none';
+    }
+
     return (
         <div 
             className="tile"
-            style={{width: width, height: height}}
+            style={style}
             onClick={onClick}
         >
             <img
@@ -137,7 +143,6 @@ class MapView extends React.Component {
 
     render() {
         const self = this;
-        console.warn(self.props.world);
 
         if (self.props.world) {
             return (
@@ -154,14 +159,34 @@ class MapView extends React.Component {
                                     {
                                         row.map(function(tile, j) {
                                             return (
-                                                <Tile 
+                                                <div 
+                                                    className="tiles-container"
                                                     key={j} 
-                                                    width={self.state.tileWidth}
-                                                    height={self.state.tileHeight}
-                                                    value={tile}
-                                                    image={self.props.tileset[tile]}
                                                     onClick={() => self.props.onTileClick(i, j)}
-                                                />
+                                                    style={{
+                                                        width: self.state.tileWidth,
+                                                        height: self.state.tileHeight
+                                                    }}
+                                                >
+                                                    <Tile 
+                                                        display={self.props.layersVisibility[ 
+                                                            'lowerTiles'
+                                                        ]}
+                                                        value={tile}
+                                                        image={self.props.tileset[tile]}
+                                                    />
+                                                    <Tile 
+                                                        display={self.props.layersVisibility[
+                                                            'upperTiles'
+                                                        ]}
+                                                        value={self.props.world.upperTiles[i][j]}
+                                                        image={
+                                                            self.props.tileset[
+                                                                self.props.world.upperTiles[i][j]
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
                                             );
                                         })
                                     }
@@ -185,6 +210,7 @@ MapView.defaultProps = {
     tileset:            [],
     tileWidth:          64,
     tileHeight:         64,
+    layersVisibility:   {},
 };
 
 
@@ -300,6 +326,8 @@ export class MapEditor extends React.Component {
         this.handleMapChange = this.handleMapChange.bind(this);
         this.handleCreateMap = this.handleCreateMap.bind(this);
         this.handleSaveMap = this.handleSaveMap.bind(this);
+        this.handleTileClick = this.handleTileClick.bind(this);
+        this.selectedLayer = this.selectedLayer.bind(this);
     }
 
     render() {
@@ -338,11 +366,11 @@ export class MapEditor extends React.Component {
                         rows={10}
                         world={self.state.world}
                         tileset={self.state.tileset}
-                        onTileClick={function(i, j) {
-                            let world = self.state.world;
-                            world[i][j] = self.state.selectedTile;
-                            self.setState({world: world});
-                        }}
+                        onTileClick={self.handleTileClick}
+                        layersVisibility={self.state.layers.reduce(function(acc, elt) {
+                            acc[elt[0]] = elt[1];
+                            return acc;
+                        }, {})}
                     />
                     {(function() {
                         if ([0, 1].includes(self.state.selectedLayer)) {
@@ -425,5 +453,19 @@ export class MapEditor extends React.Component {
                 console.log(response);
                 self.setState({world: response.data.lowerTiles});
             });
+    }
+
+    handleTileClick(i, j) {
+        const self = this;
+
+        self.selectedLayer()[i][j] = self.state.selectedTile;
+        console.log("Setting tile on layer", self.state.selectedLayer);
+
+        self.forceUpdate();
+    }
+
+    selectedLayer() {
+        const self = this;
+        return self.state.world[self.state.layers[self.state.selectedLayer][0]];
     }
 }
