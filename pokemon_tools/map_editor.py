@@ -68,11 +68,13 @@ def convert_pickled_world():
 
 def world_to_json(world):
     as_json = {
-        "lowerTiles":   world.lower_tiles.transpose().tolist(),
-        "upperTiles":   world.upper_tiles.transpose().tolist(),
-        "collisions":   world.collisions.transpose().tolist(),
-        "events":       [],
-        "npcs":         []
+        "world": {
+            "lowerTiles":   world.lower_tiles.transpose().tolist(),
+            "upperTiles":   world.upper_tiles.transpose().tolist(),
+            "collisions":   world.collisions.transpose().tolist(),
+            "events":       [],
+            "objects":      []
+        }
     }
 
     return jsonify(as_json)

@@ -451,7 +451,7 @@ export class MapEditor extends React.Component {
         axios.post('http://localhost:5000/map/load', formData)
             .then(function(response) {
                 console.log(response);
-                self.setState({world: response.data.lowerTiles});
+                self.setState({world: response.data.world});
             });
     }
 
