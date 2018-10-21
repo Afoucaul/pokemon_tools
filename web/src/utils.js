@@ -5,11 +5,14 @@ import './utils.css';
 export class Button extends React.Component {
     render() {
         const self = this;
+        let className = "button";
+        if (self.props.disabled)
+            className += " disabled";
 
         return (
             <div 
-                className="button" 
-                onClick={self.props.onClick}
+                className={className}
+                onClick={self.props.disabled ? () => {} : self.props.onClick}
             >
                 {self.props.label}
             </div>
@@ -19,6 +22,7 @@ export class Button extends React.Component {
 Button.defaultProps = {
     label:      "BUTTON",
     onClick:    () => console.log("Default click"),
+    disabled:   false,
 };
 
 
@@ -81,4 +85,15 @@ export function handleChange(event) {
     let state = {};
     state[event.target.name] = event.target.value;
     this.setState(state);
+}
+
+
+export function Noop(_props) {
+    return (
+        <script />
+    );
+}
+
+export function capitalizeString(string) {
+    return string.charAt(0).toUpperCase() + string.substr(1);
 }
