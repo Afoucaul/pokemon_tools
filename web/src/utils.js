@@ -10,12 +10,12 @@ export class Button extends React.Component {
             className += " disabled";
 
         return (
-            <div 
+            <input 
+                type="button"
                 className={className}
                 onClick={self.props.disabled ? () => {} : self.props.onClick}
-            >
-                {self.props.label}
-            </div>
+                value={self.props.label}
+            />
         );
     }
 }
@@ -39,9 +39,7 @@ export function loadFile(callback) {
 
 export function downloadFile(data, filename) {
     const blob = new Blob([data], {type: 'application/octet-stream'});
-    console.log(blob);
     const blobUrl = window.URL.createObjectURL(blob);
-    console.log(blobUrl);
 
     const aNode = document.createElement("a");
     aNode.style.display = "none";
@@ -60,6 +58,21 @@ export function downloadFile(data, filename) {
  *     - children:      content
  */
 export class Modal extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.mainRef = React.createRef();
+
+        this.handleKeyPress = this.handleKeyPress.bind(this);
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        const self = this;
+
+        if (!prevProps.display && self.props.display)
+            self.mainRef.current.focus();
+    }
+
     render() {
         const self = this;
 
@@ -67,6 +80,9 @@ export class Modal extends React.Component {
             <div 
                 className="modal-overlay" 
                 style={{display: self.props.display ? "block" : "none"}}
+                onKeyPress={self.handleKeyPress}
+                tabIndex="0"
+                ref={self.mainRef}
             >
                 <div
                     className="modal"
@@ -77,6 +93,13 @@ export class Modal extends React.Component {
                 </div>
             </div>
         );
+    }
+
+    handleKeyPress(event) {
+        const self = this;
+
+        if (event.key === 'Escape' || event.key === 'q')
+            self.props.onClose();
     }
 }
 
