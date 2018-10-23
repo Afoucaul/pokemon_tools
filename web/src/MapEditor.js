@@ -74,7 +74,7 @@ function cutMatrix(matrix, left, right, top, bottom) {
         line.splice(-1, right);
     });
     matrix.splice(0, top);
-    matrix.splice(0, bottom);
+    matrix.splice(-1, bottom);
 }
 
 function padWorld(world, left, right, top, bottom, value=0) {
