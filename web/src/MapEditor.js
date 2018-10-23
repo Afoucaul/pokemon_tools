@@ -6,6 +6,7 @@ import {
     Modal,
     handleChange,
     downloadFile,
+    capitalizeString,
 } from './utils.js';
 import axios from 'axios';
 // import saveAs from 'file-saver';
@@ -15,6 +16,15 @@ const COLLISIONS = [
     {name: "None", color: "white"},
     {name: "Wall", color: "black"},
     {name: "Water", color: "blue"},
+    {name: "Cliff down", color: "linear-gradient(\
+        to top, rgba(196,159,38,0.65) 0%,rgba(196,159,38,0) 100%)"
+    },
+    {name: "Cliff left", color: "linear-gradient(\
+        to right, rgba(196,159,38,0.65) 0%,rgba(196,159,38,0) 100%)"
+    },
+    {name: "Cliff right", color: "linear-gradient(\
+        to left, rgba(196,159,38,0.65) 0%,rgba(196,159,38,0) 100%)"
+    },
 ];
 
 
@@ -40,6 +50,43 @@ function createWorld(rows, columns) {
     }
 
     return world;
+}
+
+function padMatrix(matrix, left, right, top, bottom, value=0) {
+    const line = Array(matrix[0].length + left + right).fill(value);
+
+    matrix.forEach(function(line) {
+        for (let i=0; i<left; i++)
+            line.unshift(value);
+        for (let i=0; i<right; i++)
+            line.push(value);
+    });
+
+    for (let i=0; i<top; i++)
+        matrix.unshift(line.slice());
+    for (let i=0; i<bottom; i++)
+        matrix.push(line.slice());
+}
+
+function cutMatrix(matrix, left, right, top, bottom) {
+    matrix.forEach(function(line) {
+        line.splice(0, left);
+        line.splice(-1, right);
+    });
+    matrix.splice(0, top);
+    matrix.splice(0, bottom);
+}
+
+function padWorld(world, left, right, top, bottom, value=0) {
+    ['lowerTiles', 'upperTiles', 'collisions'].forEach(function(layer) {
+        padMatrix(world[layer], left, right, top, bottom, value);
+    });
+}
+
+function cutWorld(world, left, right, top, bottom) {
+    ['lowerTiles', 'upperTiles', 'collisions'].forEach(function(layer) {
+        cutMatrix(world[layer], left, right, top, bottom);
+    });
 }
 
 
@@ -186,7 +233,7 @@ class MapView extends React.Component {
         if (self.props.world) {
             return (
                 <div
-                    className="tilesGrid"
+                    className="map-view"
                 >
                     {
                         self.props.world.lowerTiles.map(function(row, i) {
@@ -326,6 +373,96 @@ class NewMapModal extends React.Component {
     }
 }
 
+class PadWorldModal extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            left:       0,
+            right:      0,
+            top:        0,
+            bottom:     0,
+        };
+
+        this.onChange = handleChange.bind(this);
+    }
+
+    render() {
+        const self = this;
+
+        return (
+            <Modal 
+                display={self.props.display}
+                onClose={self.props.onClose}
+                title="Pad world"
+            >
+                {['left', 'right', 'top', 'bottom'].map(function(side, i) {return(
+                    <div>
+                <label htmlFor={side}>{capitalizeString(side)} padding:</label>
+                <input 
+                    value={self.state[side]} 
+                    onChange={self.onChange} 
+                    type="number"
+                    name={side}
+                />
+                    </div>
+                );})}
+                <Button 
+                    onClick={() => self.props.onPad(
+                        self.state.left, self.state.right, self.state.top, self.state.bottom
+                    )}
+                    label="Proceed" 
+                />
+            </Modal>
+        );
+    }
+}
+
+class CutWorldModal extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            left:       0,
+            right:      0,
+            top:        0,
+            bottom:     0,
+        };
+
+        this.onChange = handleChange.bind(this);
+    }
+
+    render() {
+        const self = this;
+
+        return (
+            <Modal 
+                display={self.props.display}
+                onClose={self.props.onClose}
+                title="Cut world"
+            >
+                {['left', 'right', 'top', 'bottom'].map(function(side, i) {return(
+                    <div>
+                <label htmlFor={side}>{capitalizeString(side)} cutting:</label>
+                <input 
+                    value={self.state[side]} 
+                    onChange={self.onChange} 
+                    type="number"
+                    name={side}
+                />
+                    </div>
+                );})}
+                <Button 
+                    onClick={() => self.props.onPad(
+                        self.state.left, self.state.right, self.state.top, self.state.bottom
+                    )}
+                    label="Proceed" 
+                />
+            </Modal>
+        );
+    }
+}
+
 
 /**
  * props:
@@ -358,6 +495,23 @@ function LayerSelect({layers, onToggleLayer, onSelectLayer, selectedLayer}) {
 }
 
 
+class RectangleTool {
+    constructor(action) {
+        this.origin = null;
+        this.action = action;
+    }
+
+    onClick(i, j) {
+        if (this.origin === null) {
+            this.origin = [i, j];
+        } else {
+            this.action(this.origin, [i, j]);
+            this.origin = null;
+        }
+    }
+}
+
+
 export class MapEditor extends React.Component {
     static title = "Map editor"
 
@@ -368,6 +522,8 @@ export class MapEditor extends React.Component {
             tileset:                    undefined,
             world:                      undefined,
             displayNewMapModal:         false,
+            displayPadWorldModal:       false,
+            displayCutWorldModal:       false,
             selectedTile:               0,
             layers: [
                 ["lowerTiles", true],
@@ -378,14 +534,21 @@ export class MapEditor extends React.Component {
             ],
             selectedLayer:              0,
             currentCollision:           COLLISIONS[0].name,
+            tool:                       "",
         };
 
-        this.handleTilesetChange = this.handleTilesetChange.bind(this);
-        this.handleMapChange = this.handleMapChange.bind(this);
         this.handleCreateMap = this.handleCreateMap.bind(this);
+        this.handleCutWorld = this.handleCutWorld.bind(this);
+        this.handleMapChange = this.handleMapChange.bind(this);
+        this.handlePadWorld = this.handlePadWorld.bind(this);
+        this.handlePaintAll = this.handlePaintAll.bind(this);
+        this.handlePaintRectangle = this.handlePaintRectangle.bind(this);
         this.handleSaveMap = this.handleSaveMap.bind(this);
         this.handleTileClick = this.handleTileClick.bind(this);
+        this.handleTilesetChange = this.handleTilesetChange.bind(this);
         this.selectedLayer = this.selectedLayer.bind(this);
+
+        this.rectangleTool = new RectangleTool(this.handlePaintRectangle);
     }
 
     render() {
@@ -397,6 +560,16 @@ export class MapEditor extends React.Component {
                     display={self.state.displayNewMapModal} 
                     onClose={() => self.setState({displayNewMapModal: false})}
                     onCreate={self.handleCreateMap}
+                />
+                <PadWorldModal
+                    display={self.state.displayPadWorldModal} 
+                    onClose={() => self.setState({displayPadWorldModal: false})}
+                    onPad={self.handlePadWorld}
+                />
+                <CutWorldModal
+                    display={self.state.displayCutWorldModal} 
+                    onClose={() => self.setState({displayCutWorldModal: false})}
+                    onPad={self.handleCutWorld}
                 />
                 <div className="side-menu">
                     <Button
@@ -414,6 +587,30 @@ export class MapEditor extends React.Component {
                     <Button
                         label="Save map"
                         onClick={self.handleSaveMap}
+                    />
+                    <Button
+                        label="Paint all"
+                        onClick={self.handlePaintAll}
+                    />
+                    <Button
+                        label="Pad world"
+                        onClick={() => self.setState({displayPadWorldModal: true})}
+                        disabled={self.state.world === undefined}
+                    />
+                    <Button
+                        label="Cut world"
+                        onClick={() => self.setState({displayCutWorldModal: true})}
+                        disabled={self.state.world === undefined}
+                    />
+                    <Button
+                        label="Normal brush"
+                        onClick={() => self.setState({tool: null})}
+                        disabled={self.state.world === undefined}
+                    />
+                    <Button
+                        label="Rectangle brush"
+                        onClick={() => self.setState({tool: self.rectangleTool})}
+                        disabled={self.state.world === undefined}
                     />
                 </div>
                 <div
@@ -518,17 +715,66 @@ export class MapEditor extends React.Component {
             });
     }
 
-    handleTileClick(i, j) {
+    handleTileClick(i, j, update=true) {
         const self = this;
 
-        self.selectedLayer()[i][j] = self.state.selectedTile;
-        console.log("Setting tile on layer", self.state.selectedLayer);
+        if (self.state.tool) {
+            self.state.tool.onClick(i, j);
 
-        self.forceUpdate();
+        } else {
+            self.selectedLayer()[i][j] = self.state.selectedTile;
+            console.log("Setting tile on layer", self.state.selectedLayer);
+
+            if (update === true) {
+                self.forceUpdate();
+            }
+        }
     }
 
     selectedLayer() {
         const self = this;
         return self.state.world[self.state.layers[self.state.selectedLayer][0]];
+    }
+
+    handlePaintAll() {
+        const self = this;
+
+        for (let i=0; i<self.state.world['lowerTiles'].length; i++) {
+            for (let j=0; j<self.state.world['lowerTiles'][0].length; j++) {
+                self.handleTileClick(i, j, false);
+            }
+        }
+
+        self.forceUpdate();
+    }
+
+    handlePadWorld(left, right, top, bottom) {
+        const self = this;
+
+        padWorld(self.state.world, left, right, top, bottom);
+
+        self.setState({displayPadWorldModal: false});
+    }
+
+    handleCutWorld(left, right, top, bottom) {
+        const self = this;
+
+        cutWorld(self.state.world, left, right, top, bottom);
+
+        self.setState({displayCutWorldModal: false});
+    }
+
+    handlePaintRectangle([i0, j0], [i1, j1]) {
+        const self = this;
+        console.log("Painting rectangle", i0, j0, i1, j1);
+
+        for (let x = i0; x <= i1; x++) {
+            for (let y = j0; y <= j1; y++) {
+                self.selectedLayer()[x][y] = self.state.selectedTile;
+                console.log("Setting tile", x, y, "to", self.state.selectedTile);
+            }
+        }
+
+        self.forceUpdate();
     }
 }
