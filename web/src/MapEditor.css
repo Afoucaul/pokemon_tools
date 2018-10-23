@@ -35,8 +35,11 @@
     height: 100%;
 }
 
-.tilesGrid {
+.map-view {
     border: solid blue 1px;
+    max-width: 65%;
+    overflow: auto;
+    max-height: 100vh;
 }
 
 .map-editor {
@@ -54,6 +57,7 @@
     border: solid red 1px;
     display: flex;
     flex-direction: column;
+    max-width: 25%;
 }
 
 .tileset-content {
