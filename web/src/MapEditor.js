@@ -764,14 +764,16 @@ export class MapEditor extends React.Component {
         self.setState({displayCutWorldModal: false});
     }
 
-    handlePaintRectangle([i0, j0], [i1, j1]) {
+    handlePaintRectangle([a, b], [c, d]) {
         const self = this;
-        console.log("Painting rectangle", i0, j0, i1, j1);
+        const i0 = Math.min(a, c);
+        const i1 = Math.max(a, c);
+        const j0 = Math.min(b, d);
+        const j1 = Math.max(b, d);
 
         for (let x = i0; x <= i1; x++) {
             for (let y = j0; y <= j1; y++) {
                 self.selectedLayer()[x][y] = self.state.selectedTile;
-                console.log("Setting tile", x, y, "to", self.state.selectedTile);
             }
         }
 
